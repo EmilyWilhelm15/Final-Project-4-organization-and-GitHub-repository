@@ -1,0 +1,203 @@
+---
+title: "Data Summary"
+author: "Emily Wilhelm"
+date: "2025-10-08"
+output: html_document
+---
+
+```{r, packages, echo = FALSE}
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+library(readr)
+library(tidyverse)
+library(lubridate)
+library(gt)
+install.packages("gtExtras")
+library(gtExtras)
+library(ggplot2)
+```
+
+## Georgia Air Quality Dataset 
+
+```{r, load-data}
+daily_data <- read.csv("./Data/ad_viz_plotval_data.csv")  
+```
+
+This dataset includes air quality data that was collected every three days in Atlanta, GA throughout the year 2024, starting on 01/01/2024. The air pollution data was sourced from the EPA's Air Quality System. There are a total of 9 air quality monitoring sites in Atlanta which collect PM2.5 data. The some of the variables that comprise the dataset are the `Date`, the daily mean PM2.5 concentrations (ug/m3 LC) - `Daily.Mean.PM2.5.Concentrations`, the daily air qualtiy index (AQI) value - `Daily.AQI.Value`, air monitor site ID - `Site.ID`, site name - `Local.Site.Name`, and `County`. 
+
+`Daily.AQI.Value` reports the overall air quality on a scale of 0-500. 
+
+* 0-50 AQI: Good - air pollution poses little to no risk 
+
+* 50-100 AQI: Moderate - some risk for thosee with high sensitivity to air pollution 
+
+* 100-150 AQI: Unhealthy for sensitive groups - those with high sensitivity to air pollution may experience health effects
+
+* 150-200 AQI: Unhealthy - some risk to the general public and risk of serious health effects for those with high sensitivity to air pollution 
+
+* 200-300 AQI: Very unhealthy - increased health risks for everyone 
+
+* 300-500 AQI: Hazardous - emergency conditions likely to affect everyone 
+
+The air monitoring site names are: 
+
+* Forest Park, Kennesaw, South Dekalb, NR-285, Fire Station #8, United Avenue, NR-GA Tech, Gwinnett, Mcdonough 
+
+
+## Analysis Objectives 
+
+* View monthly average PM2.5 (µg/m³) trends at each air monitoring site location using a table.   
+
+* Compare daily mean PM2.5 (µg/m³) ranges each month between two air monitoring sites in the same county using box plots to see how much PM2.5 could vary in one county. 
+
+## Monthly Average PM2.5 (µg/m³) For Each Air Monitoring Site Location (2024)
+
+```{r, table-code, echo=FALSE}
+
+daily_data_ga <- daily_data %>%
+  mutate(Month= as.numeric(substr(Date, 1, 2)))
+
+Forest_Park <- daily_data_ga %>% 
+  filter (Local.Site.Name == "Forest Park") 
+  
+Kennesaw <- daily_data_ga %>% 
+  filter (Local.Site.Name == "Kennesaw")
+
+South_DeKalb <- daily_data_ga %>% 
+  filter (Local.Site.Name == "South DeKalb")
+
+NR_285 <- daily_data_ga %>% 
+  filter (Local.Site.Name == "NR-285")
+
+Fire_Station_8 <- daily_data_ga %>% 
+  filter (Local.Site.Name == "Fire Station #8")
+
+United_Avenue <- daily_data_ga %>% 
+  filter (Local.Site.Name == "United Avenue")
+
+NR_GA_Tech <- daily_data_ga %>% 
+  filter (Local.Site.Name == "NR-GA Tech")
+
+Gwinnett <- daily_data_ga %>% 
+  filter (Local.Site.Name == "Gwinnett")
+
+McDonough <- daily_data_ga %>% 
+  filter (Local.Site.Name == "McDonough")
+
+```
+
+```{r, by-site-location, echo=FALSE}
+FP <- Forest_Park %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+K <- Kennesaw %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+SD <- South_DeKalb %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+NR_2 <- NR_285 %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+FS <- Fire_Station_8 %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+UA <- United_Avenue %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+NR_GA <- NR_GA_Tech %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+G <- Gwinnett %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+
+MD <- McDonough %>% 
+  group_by(Month) %>% 
+  summarize(Month_Average = mean(Daily.Mean.PM2.5.Concentration))
+```
+
+
+
+```{r, table1-code, echo=FALSE}
+all_sites <- bind_rows(
+  FP    %>% mutate(Site = "Forest Park"),
+  K     %>% mutate(Site = "Kennesaw"),
+  SD    %>% mutate(Site = "South Dekalb"),
+  NR_2  %>% mutate(Site = "NR-285"),
+  FS    %>% mutate(Site = "Fire State #8"),
+  UA    %>% mutate(Site = "United Avenue"),
+  NR_GA %>% mutate(Site = "NR-GA Tech"),
+  G     %>% mutate(Site = "Gwinnett"),
+  MD    %>% mutate(Site = "McDonough")
+)
+
+all_sites <- all_sites %>%
+  mutate(Month = as.integer(Month))
+
+all_sites_12_months <- all_sites %>%
+  group_by(Site) %>%
+  complete(Month = 1:12) %>%
+  ungroup()
+
+Average_PM2.5 <- all_sites_12_months %>%
+  pivot_wider(names_from = Site, values_from = Month_Average) %>%
+  arrange(Month)
+
+```
+
+```{r, PM2-5-Table, echo=FALSE}
+Average_PM2.5 %>% 
+  gt() %>% 
+  fmt_number(
+    columns = -Month,  
+    decimals = 2) %>% 
+  gt_theme_pff()
+```
+
+The table shows the monthly PM2.5 values for each air monitoring site location during 2024. Site location NR-285 only collected PM2.5 data from January through July, but the rest of the site locations collected PM2.5 data through all 12 months. Each site location experiences the same trend of an increase or decrease in PM2.5 for each successive month, despite their varying ranges. 
+
+## Plotting and Comparing Fulton County Air Monitoring Site Locations
+
+```{r, plot-code, echo=FALSE}
+Fulton_1 <- "NR-GA Tech"
+Fulton_2 <- "United Avenue"
+
+Fulton_data <- daily_data_ga %>%
+  filter(Local.Site.Name %in% c("NR-GA Tech", "United Avenue")) 
+
+ggplot(Fulton_data, aes(x = Local.Site.Name, y = Daily.Mean.PM2.5.Concentration, fill = Local.Site.Name)) +
+  geom_boxplot() + 
+  facet_wrap(~Month) +
+  labs(
+    title = "Comparing Daily PM2.5 Range each Month Between Two Fulton County Air Monitoring Locations",
+    x = "Month", 
+    y = "Daily PM2.5 (µg/m³)",
+    fill = "Local.Site.Name"
+  ) 
+           
+```
+
+The box plots display the ranges daily mean PM2.5 concentrations each month for two air monitoring site locations in Fulton County, NR-GA Tech and United Avenue. The largest range of PM2.5 concentrations at NA-GA Tech occurred during Feburary and the largest range of PM2.5 concentrations at United Avenue occurred during October, excluding outliers. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

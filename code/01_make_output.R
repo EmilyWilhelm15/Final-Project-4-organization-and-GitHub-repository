@@ -7,7 +7,9 @@ library(readr)
 library(tidyverse)
 library(lubridate)
 library(gt)
-
+library(gtExtras)
+library(ggplot2)
+library(webshot2)
 
 
 daily_data <- read.csv("./Data/ad_viz_plotval_data.csv")  
@@ -146,3 +148,38 @@ saveRDS(
   Fulton_data,
   file = here::here("output", "Fulton_data.rds"))
 
+Average_PM2.5 <- readRDS(
+  here::here("output/Average_PM2.5.rds")
+)
+
+Average_table <- Average_PM2.5 %>% 
+  gt() %>% 
+  fmt_number(
+    columns = -Month,  
+    decimals = 2) %>% 
+  gt_theme_pff()
+
+gt::gtsave(
+  data = Average_table,
+  filename = here::here("output", "Average_table.png")
+)
+
+#ggsave(here::here("output/Average_table.png"), plot = Average_table)
+
+Fulton_data <- readRDS(
+  here::here("output/Fulton_data.rds"))
+
+
+fulton_boxplot <- ggplot(Fulton_data, aes(x = Local.Site.Name, y = Daily.Mean.PM2.5.Concentration, fill = Local.Site.Name)) +
+  geom_boxplot() + 
+  facet_wrap(~Month) +
+  labs(
+    title = "Comparing Daily PM2.5 Range each Month Between Two Fulton County Air Monitoring Locations",
+    x = "Month", 
+    y = "Daily PM2.5 (µg/m³)",
+    fill = "Local.Site.Name"
+  ) +
+  theme(
+    axis.text.x = element_blank())
+
+ggsave(here::here("output/fulton_boxplot.png"), plot = fulton_boxplot)
